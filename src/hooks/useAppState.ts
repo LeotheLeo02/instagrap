@@ -86,7 +86,7 @@ export const useAppState = () => {
     const runningTodos = todos.filter(todo => todo.status === "running" && todo.operation_id);
     if (runningTodos.length === 0) return;
 
-    const intervals: Record<string, NodeJS.Timeout> = {};
+    const intervals: Record<string, ReturnType<typeof setInterval>> = {};
     // Per-todo in-flight guard to avoid overlapping polls
     const inFlight: Record<string, boolean> = {};
     // Per-todo backoff in ms for transient failures/timeouts
