@@ -59,20 +59,17 @@ jobs:
         rustup target add x86_64-pc-windows-msvc
     
     - name: Install frontend dependencies
-      working-directory: tauri-app
       run: npm ci
     
     - name: Build frontend
-      working-directory: tauri-app
       run: npm run build
     
     - name: Build Tauri app
-      working-directory: tauri-app
       run: npm run tauri build
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: instagrap-${{ matrix.platform }}
-        path: tauri-app/src-tauri/target/release/bundle/
+        path: src-tauri/target/release/bundle/
         retention-days: 30
