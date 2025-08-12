@@ -34,8 +34,18 @@ jobs:
     - name: Install dependencies (Ubuntu)
       if: matrix.platform == 'ubuntu-latest'
       run: |
+        set -euxo pipefail
         sudo apt-get update
-        sudo apt-get install -y libwebkit2gtk-6.0-dev libgtk-4-dev libayatana-appindicator3-dev librsvg2-dev
+        # Try webkit2gtk 4.1 (Ubuntu 24.04) then fall back to 4.0 if needed
+        sudo apt-get install -y \
+          libgtk-3-dev \
+          libayatana-appindicator3-dev \
+          librsvg2-dev || true
+        if sudo apt-get install -y libwebkit2gtk-4.1-dev; then
+          echo "Installed libwebkit2gtk-4.1-dev"
+        else
+          sudo apt-get install -y libwebkit2gtk-4.0-dev || true
+        fi
     
     - name: Install dependencies (macOS)
       if: matrix.platform == 'macos-latest'
