@@ -848,8 +848,10 @@ async fn remove_persistent_operation(operation_id: String, state: State<'_, AppS
 #[tauri::command]
 async fn save_file_dialog(content: String, filename: String, _file_type: String) -> Result<(), String> {
     // Get the temp directory
-    let temp_dir = std::env::temp_dir();
-    let file_path = temp_dir.join(&filename);
+    let dir = dirs::download_dir().unwrap_or_else(|| std::env::temp_dir());
+    // Fallback safe: ensure directory exists
+    let _ = fs::create_dir_all(&dir);
+    let file_path = dir.join(&filename);
     
     // Write the file to temp directory
     fs::write(&file_path, content)
@@ -857,10 +859,30 @@ async fn save_file_dialog(content: String, filename: String, _file_type: String)
     
     println!("✅ File saved to: {}", file_path.display());
     
-    // Open the file with the default application
-    let _ = Command::new("open")
-        .arg(&file_path)
-        .output();
+    // Open the file with the default application (cross-platform)
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("open")
+            .arg(&file_path)
+            .spawn();
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(path_str) = file_path.to_str() {
+            // Use cmd's built-in 'start' to open with default app
+            let _ = Command::new("cmd")
+                .args(["/C", "start", "", path_str])
+                .spawn();
+        }
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let _ = Command::new("xdg-open")
+            .arg(&file_path)
+            .spawn();
+    }
     
     Ok(())
 }
@@ -1107,6 +1129,7 @@ async fn delete_todo(todo_id: String, state: State<'_, AppStateManager>) -> Resu
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .manage(AppStateManager::new())
         .invoke_handler(tauri::generate_handler![
             login_and_upload,
